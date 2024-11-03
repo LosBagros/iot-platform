@@ -5,6 +5,7 @@
 - TimescaleDB
 - Grafana
 
+![Architecture](./architecture.png)
 
 ## Create user
 
