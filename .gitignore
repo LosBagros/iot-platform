@@ -1,0 +1,3 @@
+timescale_data/
+mosquitto/config/passwords
+.env

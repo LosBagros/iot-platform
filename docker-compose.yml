@@ -1,0 +1,71 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/:/mosquitto/
+    restart: always
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: timescaledb
+    environment:
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB}"
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - ./timescale_data:/var/lib/postgresql/data
+      #- ./init_timescale.sql:/docker-entrypoint-initdb.d/init_timescale.sql
+    restart: always
+
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    depends_on:
+      - timescaledb
+      - mosquitto
+    restart: always
+    environment:
+      MQTT_USERNAME: "${MQTT_USERNAME}"
+      MQTT_PASSWORD: "${MQTT_PASSWORD}"
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB: "${DB}"
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf
+
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_USER}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_PASSWORD}"
+    depends_on:
+      - timescaledb
+    restart: always
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    depends_on:
+      - timescaledb
+    ports:
+      - "${ADMINER_PORT}:8080"
+    environment:
+      - ADMINER_DESIGN=pepa-linha-dark
+    restart: always
+
+volumes:
+  grafana-storage: {}
